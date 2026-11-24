@@ -5,7 +5,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o recall-mcp-gateway ./cmd/gateway/
 
-FROM alpine:3.20
+FROM alpine:3.24
 RUN apk add --no-cache ca-certificates tzdata
 RUN adduser -D -u 1000 gateway
 COPY --from=builder /app/recall-mcp-gateway /usr/local/bin/recall-mcp-gateway
