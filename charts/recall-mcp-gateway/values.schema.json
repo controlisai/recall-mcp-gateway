@@ -72,9 +72,8 @@
     },
     "postgres": {
       "type": "object",
-      "required": ["url"],
       "properties": {
-        "url": { "type": "string", "minLength": 1, "description": "REQUIRED — PostgreSQL connection string" },
+        "url": { "type": "string", "description": "PostgreSQL connection string (optional)" },
         "maxConns": { "type": "integer", "default": 25 },
         "existingSecret": { "type": "string" },
         "secretKey": { "type": "string" }
@@ -82,9 +81,8 @@
     },
     "redis": {
       "type": "object",
-      "required": ["url"],
       "properties": {
-        "url": { "type": "string", "minLength": 1, "description": "REQUIRED — Redis connection string" },
+        "url": { "type": "string", "description": "Redis connection string (optional)" },
         "password": { "type": "string" },
         "tls": { "type": "boolean", "default": false },
         "existingSecret": { "type": "string" },
