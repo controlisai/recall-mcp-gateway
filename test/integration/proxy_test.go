@@ -369,7 +369,7 @@ func TestAdmin_Status(t *testing.T) {
 
 func TestAdmin_RulesCRUD(t *testing.T) {
 	eng := rules.NewEngine(nil)
-	handlers := admin.NewRulesHandlers(eng, nil)
+	handlers := admin.NewRulesHandlers(eng, nil, "")
 	mux := http.NewServeMux()
 	handlers.RegisterRoutes(mux)
 
