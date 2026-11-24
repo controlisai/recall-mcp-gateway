@@ -12,7 +12,7 @@ func TestOriginMiddleware(t *testing.T) {
 	})
 
 	t.Run("empty allow list passes all", func(t *testing.T) {
-		h := originMiddleware(nil, ok)
+		h := originMiddleware(newOriginGuard(nil), ok)
 		req := httptest.NewRequest("POST", "/mcp", nil)
 		req.Header.Set("Origin", "https://evil.example.com")
 		rec := httptest.NewRecorder()
@@ -23,7 +23,7 @@ func TestOriginMiddleware(t *testing.T) {
 	})
 
 	t.Run("matching origin allowed", func(t *testing.T) {
-		h := originMiddleware([]string{"https://app.example.com"}, ok)
+		h := originMiddleware(newOriginGuard([]string{"https://app.example.com"}), ok)
 		req := httptest.NewRequest("POST", "/mcp", nil)
 		req.Header.Set("Origin", "https://app.example.com")
 		rec := httptest.NewRecorder()
@@ -37,7 +37,7 @@ func TestOriginMiddleware(t *testing.T) {
 	})
 
 	t.Run("non-matching origin blocked", func(t *testing.T) {
-		h := originMiddleware([]string{"https://app.example.com"}, ok)
+		h := originMiddleware(newOriginGuard([]string{"https://app.example.com"}), ok)
 		req := httptest.NewRequest("POST", "/mcp", nil)
 		req.Header.Set("Origin", "https://evil.example.com")
 		rec := httptest.NewRecorder()
@@ -48,7 +48,7 @@ func TestOriginMiddleware(t *testing.T) {
 	})
 
 	t.Run("no origin header passes", func(t *testing.T) {
-		h := originMiddleware([]string{"https://app.example.com"}, ok)
+		h := originMiddleware(newOriginGuard([]string{"https://app.example.com"}), ok)
 		req := httptest.NewRequest("POST", "/mcp", nil)
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
@@ -58,7 +58,7 @@ func TestOriginMiddleware(t *testing.T) {
 	})
 
 	t.Run("OPTIONS preflight with matching origin", func(t *testing.T) {
-		h := originMiddleware([]string{"https://app.example.com"}, ok)
+		h := originMiddleware(newOriginGuard([]string{"https://app.example.com"}), ok)
 		req := httptest.NewRequest("OPTIONS", "/mcp", nil)
 		req.Header.Set("Origin", "https://app.example.com")
 		rec := httptest.NewRecorder()
@@ -72,7 +72,7 @@ func TestOriginMiddleware(t *testing.T) {
 	})
 
 	t.Run("OPTIONS preflight with non-matching origin", func(t *testing.T) {
-		h := originMiddleware([]string{"https://app.example.com"}, ok)
+		h := originMiddleware(newOriginGuard([]string{"https://app.example.com"}), ok)
 		req := httptest.NewRequest("OPTIONS", "/mcp", nil)
 		req.Header.Set("Origin", "https://evil.example.com")
 		rec := httptest.NewRecorder()
@@ -86,7 +86,7 @@ func TestOriginMiddleware(t *testing.T) {
 	})
 
 	t.Run("trailing slash normalization", func(t *testing.T) {
-		h := originMiddleware([]string{"https://app.example.com"}, ok)
+		h := originMiddleware(newOriginGuard([]string{"https://app.example.com"}), ok)
 		req := httptest.NewRequest("POST", "/mcp", nil)
 		req.Header.Set("Origin", "https://app.example.com/")
 		rec := httptest.NewRecorder()

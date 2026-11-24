@@ -266,6 +266,9 @@ func TestRecommend_CriticalToolUnprotected(t *testing.T) {
 	})
 
 	eng := recommend.NewEngine(profiler, baseline.NewTracker(), rules.NewEngine(nil))
+	eng.SetAgentProvider(func() []config.AgentConfig {
+		return []config.AgentConfig{{ID: "test-agent", AllowedServers: []string{"db"}}}
+	})
 	recs := eng.Generate(nil)
 
 	found := false
@@ -287,6 +290,9 @@ func TestRecommend_ApplyAddsRule(t *testing.T) {
 
 	ruleEng := rules.NewEngine(nil)
 	recEng := recommend.NewEngine(profiler, baseline.NewTracker(), ruleEng)
+	recEng.SetAgentProvider(func() []config.AgentConfig {
+		return []config.AgentConfig{{ID: "test-agent", AllowedServers: []string{"db"}}}
+	})
 	recs := recEng.Generate(nil)
 
 	if len(recs) == 0 {
