@@ -1,0 +1,255 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "recall-mcp-gateway.fullname" . }}-config
+  labels:
+    {{- include "recall-mcp-gateway.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    proxy:
+      port: {{ .Values.proxy.port }}
+      dashboard: {{ .Values.proxy.dashboard }}
+      {{- if .Values.proxy.dashboardUser }}
+      dashboard_user: {{ .Values.proxy.dashboardUser | quote }}
+      {{- end }}
+      {{- if .Values.proxy.dashboardPassHash }}
+      dashboard_pass_hash: {{ .Values.proxy.dashboardPassHash | quote }}
+      {{- end }}
+      {{- if .Values.proxy.maxBodySize }}
+      max_body_size: {{ .Values.proxy.maxBodySize | quote }}
+      {{- end }}
+      {{- if .Values.proxy.rateLimit }}
+      rate_limit: {{ .Values.proxy.rateLimit }}
+      {{- end }}
+      {{- if .Values.proxy.logLevel }}
+      log_level: {{ .Values.proxy.logLevel | quote }}
+      {{- end }}
+      {{- if not (eq (toString .Values.proxy.metricsEnabled) "true") }}
+      metrics_enabled: false
+      {{- end }}
+      {{- if not (eq (toString .Values.proxy.skipLocalRules) "true") }}
+      skip_local_rules: false
+      {{- end }}
+      {{- if .Values.proxy.product }}
+      product: {{ .Values.proxy.product | quote }}
+      {{- end }}
+      {{- if and .Values.proxy.defaultAction (ne .Values.proxy.defaultAction "allow") }}
+      default_action: {{ .Values.proxy.defaultAction | quote }}
+      {{- end }}
+      {{- if and .Values.proxy.mcpHeaderMode (ne .Values.proxy.mcpHeaderMode "passthrough") }}
+      mcp_header_mode: {{ .Values.proxy.mcpHeaderMode | quote }}
+      {{- end }}
+      {{- if and .Values.proxy.clientTtlMs (ne (toString .Values.proxy.clientTtlMs) "30000") }}
+      client_ttl_ms: {{ .Values.proxy.clientTtlMs }}
+      {{- end }}
+      {{- if .Values.proxy.allowedOrigins }}
+      allowed_origins:
+        {{- range .Values.proxy.allowedOrigins }}
+        - {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.tracing.enabled }}
+      tracing:
+        enabled: true
+        {{- if .Values.tracing.endpoint }}
+        endpoint: {{ .Values.tracing.endpoint | quote }}
+        {{- end }}
+        {{- if .Values.tracing.serviceName }}
+        service_name: {{ .Values.tracing.serviceName | quote }}
+        {{- end }}
+      {{- end }}
+      audit:
+        retention: {{ .Values.audit.retention | quote }}
+        {{- if .Values.audit.maxEntries }}
+        max_entries: {{ .Values.audit.maxEntries }}
+        {{- end }}
+      {{- if or .Values.approval.ttl .Values.approval.adminKey .Values.approval.slackSigningSecret }}
+      approval:
+        {{- if .Values.approval.ttl }}
+        ttl: {{ .Values.approval.ttl | quote }}
+        {{- end }}
+        {{- if .Values.approval.adminKey }}
+        admin_key: {{ .Values.approval.adminKey | quote }}
+        {{- end }}
+        {{- if .Values.approval.slackSigningSecret }}
+        slack_signing_secret: {{ .Values.approval.slackSigningSecret | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.tls.enabled }}
+      tls_cert: /etc/tls/tls.crt
+      tls_key: /etc/tls/tls.key
+      {{- end }}
+      {{- if .Values.platform.engineUrl }}
+      engine_url: {{ .Values.platform.engineUrl | quote }}
+      console_api_url: {{ .Values.platform.consoleApiUrl | quote }}
+      api_key: {{ .Values.platform.apiKey | quote }}
+      service_token: {{ .Values.platform.serviceToken | quote }}
+      {{- end }}
+
+    postgres:
+      url: {{ .Values.postgres.url | quote }}
+      {{- if .Values.postgres.maxConns }}
+      max_conns: {{ .Values.postgres.maxConns }}
+      {{- end }}
+
+    redis:
+      url: {{ .Values.redis.url | quote }}
+      {{- if .Values.redis.password }}
+      password: {{ .Values.redis.password | quote }}
+      {{- end }}
+      {{- if .Values.redis.tls }}
+      tls: true
+      {{- end }}
+
+    {{- if .Values.authServer.enabled }}
+    auth_server:
+      issuer: {{ .Values.authServer.issuer | quote }}
+      audience: {{ .Values.authServer.audience | quote }}
+      {{- if .Values.authServer.jwksUrl }}
+      jwks_url: {{ .Values.authServer.jwksUrl | quote }}
+      {{- end }}
+      {{- if .Values.authServer.approvalSecret }}
+      approval_secret: {{ .Values.authServer.approvalSecret | quote }}
+      {{- end }}
+      {{- if .Values.authServer.maxDelegationDepth }}
+      max_delegation_depth: {{ .Values.authServer.maxDelegationDepth }}
+      {{- end }}
+      {{- if .Values.authServer.signingKeyFile }}
+      signing_key_file: {{ .Values.authServer.signingKeyFile | quote }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.servers }}
+    servers:
+      {{- range .Values.servers }}
+      - name: {{ .name }}
+        transport: {{ .transport }}
+        {{- if .url }}
+        url: {{ .url | quote }}
+        {{- end }}
+        {{- if .command }}
+        command: {{ .command }}
+        {{- end }}
+        {{- if .args }}
+        args:
+          {{- range .args }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .env }}
+        env:
+          {{- range $k, $v := .env }}
+          {{ $k }}: {{ $v | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .cost_per_call }}
+        cost_per_call: {{ .cost_per_call }}
+        {{- end }}
+        {{- if .auth }}
+        auth:
+          type: {{ .auth.type }}
+          {{- if .auth.token }}
+          token: {{ .auth.token | quote }}
+          {{- end }}
+          {{- if .auth.username }}
+          username: {{ .auth.username | quote }}
+          {{- end }}
+          {{- if .auth.password }}
+          password: {{ .auth.password | quote }}
+          {{- end }}
+          {{- if .auth.token_url }}
+          token_url: {{ .auth.token_url | quote }}
+          {{- end }}
+          {{- if .auth.client_id }}
+          client_id: {{ .auth.client_id | quote }}
+          {{- end }}
+          {{- if .auth.client_secret }}
+          client_secret: {{ .auth.client_secret | quote }}
+          {{- end }}
+          {{- if .auth.scopes }}
+          scopes:
+            {{- range .auth.scopes }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .auth.headers }}
+          headers:
+            {{- range $k, $v := .auth.headers }}
+            {{ $k }}: {{ $v | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .auth.client_cert }}
+          client_cert: {{ .auth.client_cert | quote }}
+          {{- end }}
+          {{- if .auth.client_key }}
+          client_key: {{ .auth.client_key | quote }}
+          {{- end }}
+          {{- if .auth.ca_cert }}
+          ca_cert: {{ .auth.ca_cert | quote }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.agents }}
+    agents:
+      {{- range .Values.agents }}
+      - id: {{ .id }}
+        {{- if .token_hash }}
+        token_hash: {{ .token_hash | quote }}
+        {{- end }}
+        {{- if .archetype }}
+        archetype: {{ .archetype | quote }}
+        {{- end }}
+        {{- if .product }}
+        product: {{ .product | quote }}
+        {{- end }}
+        {{- if .allowed_servers }}
+        allowed_servers:
+          {{- range .allowed_servers }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .server_access_restricted }}
+        server_access_restricted: true
+        {{- end }}
+        {{- if .org_id }}
+        org_id: {{ .org_id | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.rules }}
+    rules:
+      {{- range .Values.rules }}
+      - tool: {{ .tool | quote }}
+        action: {{ .action }}
+        {{- if .reason }}
+        reason: {{ .reason | quote }}
+        {{- end }}
+        {{- if .agents }}
+        agents:
+          {{- range .agents }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .server }}
+        server: {{ .server | quote }}
+        {{- end }}
+        {{- if .rate_limit }}
+        rate_limit: {{ .rate_limit | quote }}
+        {{- end }}
+        {{- if .retry_method }}
+        retry_method: {{ .retry_method | quote }}
+        {{- end }}
+        {{- if .retry_hint_ms }}
+        retry_hint_ms: {{ .retry_hint_ms }}
+        {{- end }}
+        {{- if .status_webhook }}
+        status_webhook: {{ .status_webhook | quote }}
+        {{- end }}
+        {{- if .notify }}
+        notify: {{ .notify | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}

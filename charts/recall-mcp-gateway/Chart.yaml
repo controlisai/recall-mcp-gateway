@@ -1,0 +1,17 @@
+apiVersion: v2
+name: recall-mcp-gateway
+description: Recall MCP Gateway — tool monitoring & control for AI agents
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - mcp
+  - ai-agents
+  - governance
+  - proxy
+home: https://controlis.ai
+sources:
+  - https://github.com/controlisai/recall-mcp-gateway
+maintainers:
+  - name: ControlisAI
+    email: engineering@controlis.ai

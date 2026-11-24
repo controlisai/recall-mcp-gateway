@@ -1,0 +1,172 @@
+# Recall MCP Gateway Helm Values
+#
+# Helm is for production Kubernetes deployments with:
+#   - PostgreSQL (required — shared durable store, cross-pod LISTEN/NOTIFY sync)
+#   - Redis (required — cross-pod rate limiting + SSE relay)
+#   - 2+ replicas (HA)
+#
+# For dev/single-pod: use Docker Compose instead (standalone or postgres profile).
+# See: docs/client/deployment-guide.md
+
+replicaCount: 2
+
+image:
+  repository: controlisai/recall-mcp-gateway
+  tag: ""  # defaults to Chart appVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Proxy configuration
+proxy:
+  port: 8090
+  dashboard: true
+  dashboardUser: "admin"
+  dashboardPassHash: ""        # REQUIRED — generate: htpasswd -nbBC 10 "" yourpassword | cut -d: -f2
+  maxBodySize: "10MB"
+  rateLimit: 100               # per-IP req/s (0=disabled)
+  logLevel: "info"             # debug | info | warn | error
+  metricsEnabled: true         # Prometheus /metrics endpoint
+  product: ""                  # label shown in logs, audit, dashboard
+  defaultAction: "allow"       # allow | block — when no rule matches
+  skipLocalRules: true         # skip proxy rules when platform engine connected
+  mcpHeaderMode: "passthrough" # passthrough | generate | managed
+  clientTtlMs: 30000           # tool list cache TTL sent to clients (ms)
+  # CORS — restrict origins (empty list = allow all)
+  allowedOrigins: []
+    # - "https://app.example.com"
+
+# Audit tuning
+audit:
+  retention: 30d               # auto-purge entries older than this
+  maxEntries: 100000           # hard cap (0 = unlimited)
+
+# Approval tuning
+approval:
+  ttl: "5m"                    # pending approval expiry
+  adminKey: ""                 # shared secret for approval API endpoints
+  slackSigningSecret: ""       # Slack app signing secret for interactive callbacks
+
+# OTel tracing
+tracing:
+  enabled: false
+  endpoint: ""                 # OTLP collector endpoint (e.g. "localhost:4317")
+  serviceName: "recall-mcp-gateway"
+
+# TLS configuration
+tls:
+  enabled: false
+  cert: ""
+  key: ""
+  existingSecret: ""           # or reference a k8s TLS secret
+
+# PostgreSQL — shared durable store for all pods (REQUIRED).
+# All state lives here: servers, agents, rules, audit, approvals, baselines.
+# Cross-pod sync via LISTEN/NOTIFY (automatic).
+postgres:
+  url: ""                      # REQUIRED — postgres://user:pass@host:5432/recall_gateway?sslmode=require
+  maxConns: 25
+  # Or reference an existing secret:
+  # existingSecret: recall-gateway-postgres
+  # secretKey: url
+
+# Redis — cross-pod rate limiting + SSE relay (REQUIRED).
+# NOT used for config sync — that's PostgreSQL LISTEN/NOTIFY.
+redis:
+  url: ""                      # REQUIRED — redis://redis:6379
+  password: ""                 # Redis auth password
+  tls: false                   # enable TLS for Redis connection
+  # Or reference an existing secret:
+  # existingSecret: recall-gateway-redis
+  # secretKey: url
+
+# External JWT auth server — validates JWTs from your OAuth/OIDC provider.
+# When not set, the gateway uses its built-in OAuth server.
+authServer:
+  enabled: false
+  issuer: ""                   # AS issuer URL (required when enabled)
+  audience: ""                 # expected JWT audience (typically the gateway's MCP URL)
+  jwksUrl: ""                  # JWKS endpoint (auto-discovered from issuer if omitted)
+  approvalSecret: ""           # 32+ char key for consent request state encryption
+  maxDelegationDepth: 0        # max JWT act claim nesting (0 = unlimited)
+  signingKeyFile: ""           # PEM RSA key for token exchange (ephemeral if omitted)
+
+# Connected mode (Recall Platform)
+platform:
+  engineUrl: ""
+  consoleApiUrl: ""
+  apiKey: ""
+  serviceToken: ""
+
+# Seed data — populates the database on first startup only.
+# After that, manage via dashboard or admin API.
+
+servers: []
+  # - name: github-mcp
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "@modelcontextprotocol/server-github"]
+  #   env:
+  #     GITHUB_TOKEN: "${GITHUB_TOKEN}"
+
+agents: []
+  # - id: my-agent
+  #   token_hash: "sha256hex..."
+  #   archetype: autonomous
+  #   allowed_servers: [github-mcp]
+
+rules: []
+  # - tool: "delete_*"
+  #   action: block
+  #   reason: "Destructive operations blocked"
+
+# Ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: gateway.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Service
+service:
+  type: ClusterIP
+  port: 8090
+
+# Resources
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Pod settings
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL

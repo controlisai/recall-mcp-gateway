@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "recall-mcp-gateway.fullname" . }}
+  labels:
+    {{- include "recall-mcp-gateway.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "recall-mcp-gateway.selectorLabels" . | nindent 4 }}

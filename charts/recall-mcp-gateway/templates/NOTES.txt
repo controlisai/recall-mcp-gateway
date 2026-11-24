@@ -1,0 +1,26 @@
+Recall MCP Gateway has been deployed.
+
+1. Get the proxy URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "recall-mcp-gateway.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  kubectl get --namespace {{ .Release.Namespace }} svc {{ include "recall-mcp-gateway.fullname" . }} -w
+{{- else }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "recall-mcp-gateway.fullname" . }} {{ .Values.proxy.port }}:{{ .Values.service.port }}
+  echo http://localhost:{{ .Values.proxy.port }}
+{{- end }}
+
+2. Dashboard: http://localhost:{{ .Values.proxy.port }}/dashboard/
+
+3. MCP endpoint: http://localhost:{{ .Values.proxy.port }}/mcp
+
+4. Replicas: {{ .Values.replicaCount }}
+   PostgreSQL: {{ .Values.postgres.url | default "NOT SET — REQUIRED" }}
+   Redis: {{ .Values.redis.url | default "NOT SET — REQUIRED" }}
+   Audit retention: {{ .Values.audit.retention }}

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recall MCP Gateway Helm Values",
+  "description": "Production multi-pod deployment with PostgreSQL + Redis",
+  "type": "object",
+  "required": ["postgres", "redis"],
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 2,
+      "description": "Number of gateway pod replicas"
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": { "type": "string", "default": "controlisai/recall-mcp-gateway" },
+        "tag": { "type": "string", "default": "" },
+        "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"], "default": "IfNotPresent" }
+      }
+    },
+    "proxy": {
+      "type": "object",
+      "properties": {
+        "port": { "type": "integer", "default": 8090 },
+        "dashboard": { "type": "boolean", "default": true },
+        "dashboardUser": { "type": "string", "default": "admin" },
+        "dashboardPassHash": { "type": "string", "description": "REQUIRED — bcrypt hash of dashboard password" },
+        "maxBodySize": { "type": "string", "default": "10MB" },
+        "rateLimit": { "type": "integer", "default": 100, "description": "Per-IP req/s (0=disabled)" },
+        "logLevel": { "type": "string", "enum": ["debug", "info", "warn", "error"], "default": "info" },
+        "metricsEnabled": { "type": "boolean", "default": true },
+        "product": { "type": "string" },
+        "defaultAction": { "type": "string", "enum": ["allow", "block"], "default": "allow" },
+        "skipLocalRules": { "type": "boolean", "default": true },
+        "mcpHeaderMode": { "type": "string", "enum": ["passthrough", "generate", "managed"], "default": "passthrough" },
+        "clientTtlMs": { "type": "integer", "default": 30000 },
+        "allowedOrigins": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "properties": {
+        "retention": { "type": "string", "default": "30d", "description": "Auto-purge entries older than this" },
+        "maxEntries": { "type": "integer", "default": 100000, "description": "Hard cap (0 = unlimited)" }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "properties": {
+        "ttl": { "type": "string", "default": "5m", "description": "Pending approval expiry" },
+        "adminKey": { "type": "string", "description": "Shared secret for approval API endpoints" },
+        "slackSigningSecret": { "type": "string", "description": "Slack app signing secret" }
+      }
+    },
+    "tracing": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "endpoint": { "type": "string", "description": "OTLP collector endpoint" },
+        "serviceName": { "type": "string", "default": "recall-mcp-gateway" }
+      }
+    },
+    "tls": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "cert": { "type": "string" },
+        "key": { "type": "string" },
+        "existingSecret": { "type": "string" }
+      }
+    },
+    "postgres": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1, "description": "REQUIRED — PostgreSQL connection string" },
+        "maxConns": { "type": "integer", "default": 25 },
+        "existingSecret": { "type": "string" },
+        "secretKey": { "type": "string" }
+      }
+    },
+    "redis": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1, "description": "REQUIRED — Redis connection string" },
+        "password": { "type": "string" },
+        "tls": { "type": "boolean", "default": false },
+        "existingSecret": { "type": "string" },
+        "secretKey": { "type": "string" }
+      }
+    },
+    "authServer": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "issuer": { "type": "string", "description": "OAuth/OIDC issuer URL" },
+        "audience": { "type": "string", "description": "Expected JWT audience" },
+        "jwksUrl": { "type": "string" },
+        "approvalSecret": { "type": "string" },
+        "maxDelegationDepth": { "type": "integer", "default": 0 },
+        "signingKeyFile": { "type": "string" }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "properties": {
+        "engineUrl": { "type": "string" },
+        "consoleApiUrl": { "type": "string" },
+        "apiKey": { "type": "string" },
+        "serviceToken": { "type": "string" }
+      }
+    },
+    "servers": { "type": "array", "description": "Seed data — MCP servers (first startup only)" },
+    "agents": { "type": "array", "description": "Seed data — agents (first startup only)" },
+    "rules": { "type": "array", "description": "Seed data — governance rules (first startup only)" },
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "hosts": { "type": "array" },
+        "tls": { "type": "array" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"], "default": "ClusterIP" },
+        "port": { "type": "integer", "default": 8090 }
+      }
+    },
+    "resources": { "type": "object" },
+    "nodeSelector": { "type": "object" },
+    "tolerations": { "type": "array" },
+    "affinity": { "type": "object" },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": { "type": "boolean", "default": true },
+        "name": { "type": "string" },
+        "annotations": { "type": "object" }
+      }
+    },
+    "podSecurityContext": { "type": "object" },
+    "securityContext": { "type": "object" }
+  }
+}
