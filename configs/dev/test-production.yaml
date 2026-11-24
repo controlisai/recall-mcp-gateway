@@ -1,0 +1,46 @@
+# Test config for production deployment
+# Run: ./recall-mcp-gateway --config configs/dev/test-production.yaml
+
+proxy:
+  port: 8090
+  dashboard: true
+  dashboard_user: admin
+  # bcrypt hash of "testpass123": htpasswd -nbBC 10 "" testpass123 | cut -d: -f2
+  dashboard_pass_hash: "$2a$10$rBVG1y1I3GxMG1L0aZfbVeGJ4N/FVR.rz5Xh3kKv5XgqQ5.YHwALy"
+  audit:
+    storage: sqlite
+    path: /tmp/recall-mcp-gateway-audit.db
+    retention: 7d
+
+# Servers, agents, and rules below are SEED DATA — they populate the
+# database on first startup only. After that, manage via dashboard or admin API.
+
+# Pre-configured agents (teams would define service accounts here)
+agents:
+  - id: claude-code
+    # SHA-256 of "test-token-claude"
+    token_hash: "b03329a184dbf73dabe0c0ad934903e53e0b2c2c69e1a0c4e8c3e3e4dc2e1fa9"
+    allowed_servers: [filesystem]
+  - id: cursor-agent
+    # SHA-256 of "test-token-cursor"
+    token_hash: "c9be7ab2a51d4d8fd1fc1a85e5c6a4df2b88f9d6e3a7c1b0d5e2f4a3b6c8d7e0"
+    allowed_servers: [filesystem]
+  - id: servicenow-bot
+    # SHA-256 of "test-token-sn"
+    token_hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5"
+
+# MCP servers (use your real ones or these examples)
+servers:
+  - name: filesystem
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+
+# Example rules
+rules:
+  - tool: "write_file"
+    action: require_approval
+    reason: "File writes need approval"
+  - tool: "drop_*"
+    action: block
+    reason: "No destructive database operations"

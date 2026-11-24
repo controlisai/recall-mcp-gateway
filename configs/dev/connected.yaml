@@ -1,0 +1,57 @@
+# Recall Platform — Connected Mode (example)
+# Proxy + engine for full policy evaluation, compliance, and drift detection.
+
+proxy:
+  port: 8090
+  dashboard: true
+  engine_url: "http://your-recall-engine:8084"
+  api_key: "${RECALL_API_KEY}"
+  console_api_url: "http://your-recall-console-api:8082"
+  service_token: "${RECALL_SERVICE_TOKEN}"
+  default_org_id: "default"
+  audit:
+    storage: sqlite
+    path: /var/log/recall-mcp-gateway/audit.db
+    retention: 30d
+
+# Servers, agents, and rules below are SEED DATA — they populate the
+# database on first startup only. After that, manage via dashboard or admin API.
+
+servers:
+  - name: database
+    transport: http
+    url: http://database-mcp:3100/mcp
+    cost_per_call: 0.04
+
+  - name: slack
+    transport: http
+    url: http://slack-mcp:3200/mcp
+
+products:
+  - name: my-product
+    api_key: "${RECALL_PRODUCT_API_KEY}"
+  - name: my-other-product
+    api_key: "${RECALL_OTHER_PRODUCT_API_KEY}"
+
+agents:
+  - id: support-bot
+    token_hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4"
+    product: "my-product"
+    org_id: "my-org"
+    allowed_servers: [database, slack]
+  - id: data-pipeline
+    token_hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5"
+    product: "my-other-product"
+    allowed_servers: [database]
+
+rules:
+  - tool: "*"
+    action: allow
+    rate_limit: "200/minute"
+
+# LLM-Powered Recommendations (optional)
+# llm:
+#   enabled: true
+#   provider: "anthropic"
+#   model: "claude-3-sonnet"
+#   api_key_env: "ANTHROPIC_API_KEY"

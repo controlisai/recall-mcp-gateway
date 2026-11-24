@@ -1,0 +1,64 @@
+# Recall MCP Gateway — n8n Agent
+# Proxy n8n's MCP tool connections with control and visibility.
+#
+# n8n agents connect to the proxy via HTTP:
+#   Set MCP server URL in n8n to: http://recall-mcp-gateway:8090/mcp
+#
+# The proxy forwards tool calls to your actual MCP servers and adds
+# visibility, detection, and control to every call.
+
+proxy:
+  port: 8090
+  dashboard: true
+  audit:
+    storage: sqlite
+    path: /var/log/recall-mcp-gateway/audit.db
+    retention: 30d
+
+# Servers, agents, and rules below are SEED DATA — they populate the
+# database on first startup only. After that, manage via dashboard or admin API.
+
+servers:
+  - name: database
+    transport: http
+    url: http://database-mcp:3100/mcp
+    cost_per_call: 0.02
+
+  - name: slack
+    transport: http
+    url: http://slack-mcp:3200/mcp
+
+  - name: email
+    transport: http
+    url: http://email-mcp:3300/mcp
+
+# n8n agents identified by SHA-256 hashed Bearer token
+# Generate: echo -n "your-token" | sha256sum
+agents:
+  - id: n8n-workflow-1
+    token_hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+    allowed_servers: [database, slack]
+  - id: n8n-workflow-2
+    token_hash: "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3"
+    allowed_servers: [database, email]
+
+# Rules for n8n agents
+rules:
+  # Block destructive database operations
+  - tool: "*delete*"
+    action: block
+    reason: "Destructive operations blocked for n8n agents"
+
+  # External communication requires approval
+  - tool: "slack_*"
+    action: require_approval
+    reason: "Slack messages require approval"
+
+  - tool: "email_*"
+    action: require_approval
+    reason: "Email sending requires approval"
+
+  # Rate limit everything
+  - tool: "*"
+    action: allow
+    rate_limit: "100/minute"

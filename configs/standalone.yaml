@@ -1,0 +1,80 @@
+# Recall MCP Gateway — Standalone (SQLite)
+#
+# Single-pod. Zero external dependencies. All state in local gateway.db.
+#
+# Setup:
+#   1. CHANGE dashboard_pass_hash below
+#   2. Add your servers/agents/rules (seed data, first run only)
+#   3. Run: docker compose --profile standalone up -d
+#
+# Generate password hash: htpasswd -nbBC 10 "" yourpassword | cut -d: -f2
+
+proxy:
+  port: 8090
+  dashboard: true
+  dashboard_user: admin
+  dashboard_pass_hash: "$2a$10$xOSN3VOa3TPlwd/1znuNPe3XJN3GZkv12tmCVfo7Hy7MyPLy7cZX2"  # CHANGE THIS (default: admin)
+  log_level: info
+  max_body_size: "10MB"
+  rate_limit: 100
+  # default_action: allow         # allow (default) | block — when no rule matches
+  # product: "my-gateway"         # label shown in logs, audit, dashboard
+
+  # TLS — uncomment for HTTPS
+  # tls_cert: /path/to/cert.pem
+  # tls_key: /path/to/key.pem
+
+  # CORS — restrict origins (empty = allow all)
+  # allowed_origins:
+  #   - "https://app.example.com"
+  #   - "http://localhost:3000"
+
+  # Audit tuning
+  # audit:
+  #   retention: 30d              # auto-purge entries older than this
+  #   max_entries: 100000         # hard cap (0 = unlimited)
+
+  # Approval tuning
+  # approval:
+  #   ttl: "5m"                   # pending approval expiry
+  #   admin_key: ""               # shared secret for approval API endpoints
+  #   slack_signing_secret: ""    # Slack app signing secret for interactive callbacks
+
+  # Observability
+  # metrics_enabled: true         # Prometheus /metrics endpoint
+  # tracing:
+  #   enabled: false
+  #   endpoint: "localhost:4317"  # OTLP collector
+  #   service_name: "recall-mcp-gateway"
+
+  # MCP protocol
+  # mcp_header_mode: passthrough  # passthrough | generate | managed
+  # client_ttl_ms: 30000          # tool list cache TTL sent to clients (ms)
+
+auth_server:
+  issuer: "https://auth.example.com"
+  audience: "http://localhost:8090/mcp"
+  jwks_url: "https://auth.example.com/.well-known/jwks.json"
+  approval_secret: "CHANGE-ME-32-char-random-secret!" # CHANGE THIS — generate with: openssl rand -base64 24
+  max_delegation_depth: 3
+
+# Seed data — populates the database on first startup only.
+# After first run, manage via dashboard or admin API.
+
+servers: []
+  # - name: my-database
+  #   transport: http
+  #   url: http://host.docker.internal:3000/mcp
+
+agents: []
+  # - id: my-agent
+  #   token_hash: "sha256hex..."    # echo -n "rp_yourtoken" | sha256sum | cut -d' ' -f1
+  #   archetype: autonomous         # autonomous | user_embedded | delegated
+  #   allowed_servers: [my-database]
+
+rules: []
+  # - tool: "delete_*"
+  #   action: block
+  #   reason: "Destructive operations blocked"
+  # - tool: "*"
+  #   action: allow

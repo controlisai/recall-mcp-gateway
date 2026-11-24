@@ -1,0 +1,95 @@
+# Recall MCP Gateway — Multi-Pod HA
+#
+# Shared PostgreSQL for all state + Redis for rate limiting + SSE relay.
+# Cross-pod sync via PostgreSQL LISTEN/NOTIFY (automatic).
+#
+# This Docker Compose profile runs 2 gateway pods for testing multi-pod
+# behavior (cross-pod sync, shared state). For production multi-pod
+# deployments with 3+ pods and load balancing, use Kubernetes + Helm:
+#
+#   helm install recall-mcp-gateway charts/recall-mcp-gateway \
+#     --set replicaCount=3 \
+#     --set postgres.enabled=true \
+#     --set postgres.url="postgres://..." \
+#     --set redis.enabled=true \
+#     --set redis.url="redis://..."
+#
+# Setup (Docker — 2 pods for testing):
+#   1. CHANGE dashboard_pass_hash below
+#   2. CHANGE postgres.url to your PostgreSQL connection string
+#   3. CHANGE redis.url to your Redis connection string
+#   4. Add your servers/agents/rules (seed data, first run only)
+#   5. Run: docker compose --profile multinode up -d
+#
+# Generate password hash: htpasswd -nbBC 10 "" yourpassword | cut -d: -f2
+
+proxy:
+  port: 8090
+  dashboard: true
+  dashboard_user: admin
+  dashboard_pass_hash: "$2a$10$xOSN3VOa3TPlwd/1znuNPe3XJN3GZkv12tmCVfo7Hy7MyPLy7cZX2"  # CHANGE THIS (default: admin)
+  log_level: info
+  max_body_size: "10MB"
+  rate_limit: 100
+  # default_action: allow         # allow (default) | block — when no rule matches
+  # product: "my-gateway"         # label shown in logs, audit, dashboard
+
+  # TLS — uncomment for HTTPS
+  # tls_cert: /path/to/cert.pem
+  # tls_key: /path/to/key.pem
+
+  # CORS — restrict origins (empty = allow all)
+  # allowed_origins:
+  #   - "https://app.example.com"
+  #   - "http://localhost:3000"
+
+  # Audit tuning
+  # audit:
+  #   retention: 30d              # auto-purge entries older than this
+  #   max_entries: 100000         # hard cap (0 = unlimited)
+
+  # Approval tuning
+  # approval:
+  #   ttl: "5m"                   # pending approval expiry
+  #   admin_key: ""               # shared secret for approval API endpoints
+  #   slack_signing_secret: ""    # Slack app signing secret for interactive callbacks
+
+  # Observability
+  # metrics_enabled: true         # Prometheus /metrics endpoint
+  # tracing:
+  #   enabled: false
+  #   endpoint: "localhost:4317"  # OTLP collector
+  #   service_name: "recall-mcp-gateway"
+
+  # MCP protocol
+  # mcp_header_mode: passthrough  # passthrough | generate | managed
+  # client_ttl_ms: 30000          # tool list cache TTL sent to clients (ms)
+
+# PostgreSQL — shared durable store for all pods.
+postgres:
+  url: "postgres://recall:recall@postgres:5432/recall_gateway?sslmode=disable"  # CHANGE THIS
+  max_conns: 25
+
+# Redis — cross-pod rate limiting + live dashboard SSE relay.
+redis:
+  url: "redis://redis:6379"  # CHANGE THIS
+  # password: ""               # Redis auth password
+  # tls: false                 # enable TLS for Redis connection
+
+# External JWT auth server — uncomment to validate JWTs from your OAuth/OIDC provider
+# auth_server:
+#   issuer: "https://auth.example.com"
+#   audience: "http://localhost:8090/mcp"
+#   jwks_url: "https://auth.example.com/.well-known/jwks.json"
+#   approval_secret: "32-char-secret-for-consent-encryption"
+#   max_delegation_depth: 3
+#   signing_key_file: ""
+
+# Seed data — first pod to start populates the shared database.
+# After first run, manage via dashboard or admin API.
+
+servers: []
+
+agents: []
+
+rules: []

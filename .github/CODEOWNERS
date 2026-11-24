@@ -1,0 +1,6 @@
+# Default: maintainer reviews all PRs
+*                       @kiranpichika
+
+# Platform integration — maintainer only
+internal/engine/        @kiranpichika
+internal/platform/      @kiranpichika

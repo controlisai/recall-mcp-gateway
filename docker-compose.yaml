@@ -1,0 +1,113 @@
+# Recall MCP Gateway — Docker Compose
+#
+# Three deployment modes:
+#
+#   Standalone (SQLite, zero deps):
+#     docker compose --profile standalone up -d
+#
+#   PostgreSQL (single-pod, PG durability):
+#     docker compose --profile postgres up -d
+#
+#   Multi-pod HA (PG + Redis, 2 gateway pods — for testing):
+#     docker compose --profile multinode up -d
+#
+# For production multi-pod (3+ pods, load balancing), use Kubernetes + Helm.
+# See: helm install recall-mcp-gateway charts/recall-mcp-gateway --set replicaCount=3
+#
+# Before running: edit configs/<mode>.yaml to set your dashboard password,
+# database URLs, and seed data. The config file is the only thing you edit.
+#
+# Dashboard: http://localhost:8090/dashboard/
+
+x-gateway-base: &gateway-base
+  image: controlisai/recall-mcp-gateway:latest
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "wget", "-qO-", "http://localhost:8090/healthz"]
+    interval: 15s
+    timeout: 3s
+    start_period: 10s
+    retries: 3
+
+services:
+  # ── Standalone (SQLite) ────────────────────────────────────
+  gateway:
+    <<: *gateway-base
+    profiles: [standalone]
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./configs/standalone.yaml:/app/config.yaml:ro
+      - gateway-state:/home/gateway/.recall-mcp-gateway
+      - gateway-data:/data
+
+  # ── PostgreSQL (single-pod) ────────────────────────────────
+  gateway-pg:
+    <<: *gateway-base
+    profiles: [postgres]
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./configs/postgres.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Multi-pod HA: pod 1 ────────────────────────────────────
+  gateway-1:
+    <<: *gateway-base
+    profiles: [multinode]
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./configs/multinode.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Multi-pod HA: pod 2 ────────────────────────────────────
+  gateway-2:
+    <<: *gateway-base
+    profiles: [multinode]
+    ports:
+      - "8091:8090"
+    volumes:
+      - ./configs/multinode.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── PostgreSQL (postgres + multinode profiles) ─────────────
+  postgres:
+    image: postgres:16-alpine
+    profiles: [postgres, multinode]
+    environment:
+      POSTGRES_USER: recall
+      POSTGRES_PASSWORD: recall
+      POSTGRES_DB: recall_gateway
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recall -d recall_gateway"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Redis (multinode profile only) ─────────────────────────
+  redis:
+    image: redis:7-alpine
+    profiles: [multinode]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  gateway-state:
+  gateway-data:
+  pgdata:

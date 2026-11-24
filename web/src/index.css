@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* Theme tokens — matches existing vanilla dashboard exactly */
+:root, [data-theme="dark"] {
+  --bg: hsl(222 33% 5%);
+  --surface: hsl(222 22% 9%);
+  --border: hsl(222 16% 14%);
+  --text: hsl(220 20% 93%);
+  --muted: hsl(220 12% 44%);
+  --accent: hsl(217 92% 50%);
+  --green: hsl(152 82% 42%);
+  --amber: hsl(40 95% 52%);
+  --red: hsl(4 90% 55%);
+  --purple: hsl(268 65% 60%);
+  --radius: 6px;
+  --surface-hover: rgba(255,255,255,0.035);
+  --code-bg: rgba(255,255,255,0.04);
+  --mono: 'JetBrains Mono', 'Cascadia Code', 'SF Mono', 'Consolas', monospace;
+}
+
+[data-theme="light"] {
+  --bg: hsl(220 14% 97%);
+  --surface: hsl(0 0% 100%);
+  --border: hsl(220 12% 89%);
+  --text: hsl(222 32% 8%);
+  --muted: hsl(220 8% 44%);
+  --accent: hsl(217 82% 44%);
+  --green: hsl(152 72% 30%);
+  --amber: hsl(36 92% 40%);
+  --red: hsl(4 80% 44%);
+  --purple: hsl(268 58% 46%);
+  --radius: 8px;
+  --surface-hover: rgba(0,0,0,0.025);
+  --code-bg: hsl(220 12% 94%);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+::selection { background: rgba(59,130,246,0.25); color: var(--text); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Reset button styles */
+button { font-family: inherit; }
+
+/* Feed hover actions — shown on row hover */
+.feed-hover-actions { display: none !important; }
+.feed-row-hover:hover .feed-hover-actions { display: flex !important; }
+
+/* Context drawer transitions */
+.ctx-drawer {
+  transition: flex-basis 0.2s ease, max-width 0.2s ease, opacity 0.15s ease;
+}
+.ctx-drawer.collapsed {
+  flex-basis: 0 !important; max-width: 0 !important;
+  opacity: 0; border-left: none !important; overflow: hidden;
+}
+
+/* Audit table row hover */
+.audit-row:hover { background: rgba(255,255,255,0.03); }

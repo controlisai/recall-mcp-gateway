@@ -1,0 +1,66 @@
+# Recall MCP Gateway — Standalone Full
+# All rule types, agent identity, alerting, approval flow.
+
+proxy:
+  port: 8090
+  dashboard: true
+  audit:
+    storage: sqlite
+    path: /var/log/recall-mcp-gateway/audit.db
+    retention: 30d
+
+# Servers, agents, and rules below are SEED DATA — they populate the
+# database on first startup only. After that, manage via dashboard or admin API.
+
+servers:
+  - name: database
+    transport: http
+    url: http://localhost:3100/mcp
+    cost_per_call: 0.04
+
+  - name: slack
+    transport: http
+    url: http://localhost:3200/mcp
+
+  - name: filesystem
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+
+agents:
+  - id: support-bot
+    token_hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4"
+    allowed_servers: [database, slack]
+  - id: data-pipeline
+    token_hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5"
+    allowed_servers: [database, filesystem]
+  - id: admin-agent
+    token_hash: "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6"
+
+rules:
+  # Block destructive database operations
+  - tool: "db_*_delete"
+    action: block
+    reason: "Destructive database operations are not allowed"
+
+  # External communication requires approval
+  - tool: "slack_*"
+    action: require_approval
+    reason: "External communication requires human approval"
+
+  # Rate limit all tools to prevent runaway loops
+  - tool: "*"
+    action: allow
+    rate_limit: "200/minute"
+
+alerts:
+  - tool: "*"
+    auto_detect: true
+    window: "5m"
+
+# LLM-Powered Recommendations (optional — Ollama recommended for local use)
+# llm:
+#   enabled: true
+#   provider: "ollama"
+#   model: "llama3"
+#   url: "http://localhost:11434"
