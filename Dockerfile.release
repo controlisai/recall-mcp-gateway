@@ -1,0 +1,21 @@
+FROM alpine:3.20
+ARG TARGETARCH
+RUN apk add --no-cache ca-certificates tzdata
+RUN adduser -D -u 1000 gateway
+COPY dist/recall-mcp-gateway-linux-${TARGETARCH} /usr/local/bin/recall-mcp-gateway
+COPY configs/standalone.yaml /app/configs/standalone.yaml
+COPY configs/postgres.yaml /app/configs/postgres.yaml
+COPY configs/multinode.yaml /app/configs/multinode.yaml
+COPY docker-compose.yaml /app/docker-compose.yaml
+RUN mkdir -p /data /home/gateway/.recall-mcp-gateway && chown -R gateway:gateway /app /data /home/gateway/.recall-mcp-gateway
+USER gateway
+WORKDIR /app
+
+ENV RECALL_AUDIT_PATH=/data/audit.db
+
+VOLUME ["/data"]
+EXPOSE 8090
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8090/healthz || exit 1
+ENTRYPOINT ["recall-mcp-gateway"]
+CMD []
