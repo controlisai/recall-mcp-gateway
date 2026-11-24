@@ -9,6 +9,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/controlisai/recall-mcp-gateway/internal/baseline"
+	"github.com/controlisai/recall-mcp-gateway/internal/config"
 	"github.com/controlisai/recall-mcp-gateway/internal/detect"
 	"github.com/controlisai/recall-mcp-gateway/internal/recommend"
 	"github.com/controlisai/recall-mcp-gateway/internal/rules"
@@ -24,6 +25,14 @@ func setupRecommendTest(t *testing.T) (*recommend.Engine, *rules.Engine, *http.S
 	tracker := baseline.NewTracker()
 	ruleEngine := rules.NewEngine(nil)
 	recEngine := recommend.NewEngine(profiler, tracker, ruleEngine)
+
+	// Provide an agent with server access so coverage analysis produces recommendations
+	recEngine.SetAgentProvider(func() []config.AgentConfig {
+		return []config.AgentConfig{
+			{ID: "test-agent", AllowedServers: []string{"db"}},
+		}
+	})
+
 	recEngine.Generate(nil) // generate initial recs
 
 	handlers := NewRecommendHandlers(recEngine, ruleEngine)
