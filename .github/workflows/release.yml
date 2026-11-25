@@ -144,6 +144,9 @@ jobs:
   npm:
     needs: github-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -173,9 +176,7 @@ jobs:
 
       - name: Publish to npm
         working-directory: npm
-        run: npm publish --access public --tag ${{ steps.version.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --tag ${{ steps.version.outputs.tag }} --provenance
 
   helm:
     needs: build
