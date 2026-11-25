@@ -177,6 +177,8 @@ jobs:
       - name: Publish to npm
         working-directory: npm
         run: npm publish --access public --tag ${{ steps.version.outputs.tag }} --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   helm:
     needs: build
