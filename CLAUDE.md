@@ -72,7 +72,7 @@ make docker-down            # stop all docker compose profiles
 # React dashboard v2 (web/)
 make web-install            # cd web && npm install
 make web-dev                # cd web && npm run dev (Vite on :5173, proxies to :8090)
-make web-build              # cd web && npm run build (outputs to internal/dashboard/static/v2/)
+make web-build              # cd web && npm run build (outputs to internal/dashboard/static/)
 make web-typecheck          # cd web && npx tsc --noEmit
 make build-full             # web-build + build (React + Go in one step)
 
@@ -171,7 +171,7 @@ The gateway implements the MCP 2026-07-28 stateless protocol specification:
 
 ## Auth Providers (internal/auth/)
 
-5 auth types for upstream MCP server connections:
+6 auth types for upstream MCP server connections:
 - **none** — no auth (default)
 - **bearer** — `Authorization: Bearer <token>`, env var expansion `${VAR}`
 - **basic** — `Authorization: Basic <base64>`, env var expansion
@@ -335,7 +335,7 @@ web/
 
 **Data flow:** `useSSE()` → EventSource `/ws/audit` → `init` event hydrates stores → `entry` events prepend to feed (cap 500). Stats refreshed from `/admin/v1/audit/stats?from=24h` every 60s.
 
-**Serving:** Vite builds to `internal/dashboard/static/v2/`. `//go:embed all:static` picks it up automatically.
+**Serving:** Vite builds to `internal/dashboard/static/`. `//go:embed all:static` picks it up automatically.
 
 **Dev workflow:** Terminal 1: `make run`, Terminal 2: `make web-dev` (Vite on :5173 proxies API to :8090).
 
@@ -344,6 +344,12 @@ web/
 - Font: Outfit body, JetBrains Mono for code/numbers — use literal font stack `MONO` constant
 - All clickable elements: minimum 32px touch target, 15px font for navigation items
 - Badge text uses `--muted`, only icons get signature colors
+
+## CI/CD
+
+GitHub Actions workflows in `.github/workflows/`:
+- **ci.yml** — runs on push and PR: build, test, vet
+- **release.yml** — release workflow: cross-compile, package, Docker image, Helm chart
 
 ## Module Path
 
