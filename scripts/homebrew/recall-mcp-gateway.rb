@@ -42,11 +42,11 @@ class RecallMcpGateway < Formula
     bin.install binary => "recall-mcp-gateway"
   end
 
-  def post_install
-    ohai "Recall MCP Gateway installed!"
-    ohai "Quick start: recall-mcp-gateway --from-claude-config"
-    ohai "Dashboard:   http://localhost:8090/dashboard"
-    ohai "Docs:        https://controlis.ai/#/docs/deployment"
+  post_install_steps do
+    warn "Recall MCP Gateway installed!"
+    warn "Quick start: recall-mcp-gateway --from-claude-config"
+    warn "Dashboard:   http://localhost:8090/dashboard"
+    warn "Docs:        https://controlis.ai/#/docs/deployment"
   end
 
   test do
