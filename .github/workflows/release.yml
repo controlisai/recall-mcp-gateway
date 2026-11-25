@@ -141,6 +141,42 @@ jobs:
             dist/*.zip
             dist/checksums.txt
 
+  npm:
+    needs: github-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+          if [[ "$TAG" == *beta* || "$TAG" == *rc* ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update package version
+        working-directory: npm
+        run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+
+      - name: Update install.js version
+        working-directory: npm
+        run: sed -i "s/const VERSION = \".*\"/const VERSION = \"${{ steps.version.outputs.version }}\"/" install.js
+
+      - name: Publish to npm
+        working-directory: npm
+        run: npm publish --access public --tag ${{ steps.version.outputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   helm:
     needs: build
     runs-on: ubuntu-latest
