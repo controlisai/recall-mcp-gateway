@@ -1,0 +1,24 @@
+{
+  "name": "@controlisai/recall-mcp-gateway",
+  "version": "1.0.0-beta.2",
+  "description": "MCP governance gateway — visibility and control for AI agent tool calls",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/controlisai/recall-mcp-gateway.git"
+  },
+  "homepage": "https://github.com/controlisai/recall-mcp-gateway",
+  "keywords": ["mcp", "ai", "governance", "gateway", "agent", "tool-use", "observability"],
+  "bin": {
+    "recall-mcp-gateway": "bin/run.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": ["bin/", "install.js", "README.md", "LICENSE"],
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["x64", "arm64"],
+  "engines": {
+    "node": ">=16"
+  }
+}
