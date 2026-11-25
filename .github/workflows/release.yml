@@ -206,3 +206,64 @@ jobs:
 
       - name: Push chart to GHCR
         run: helm push recall-mcp-gateway-${{ steps.version.outputs.tag }}.tgz oci://ghcr.io/controlisai/charts
+
+  homebrew:
+    needs: github-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries
+          path: dist/
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Get checksums
+        id: checksums
+        run: |
+          echo "darwin_arm64=$(grep darwin-arm64 dist/checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "darwin_amd64=$(grep darwin-amd64 dist/checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "linux_arm64=$(grep linux-arm64 dist/checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "linux_amd64=$(grep linux-amd64 dist/checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: controlisai/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        run: |
+          cd homebrew-tap/Formula
+          sed -i 's|version ".*"|version "${{ steps.version.outputs.version }}"|' recall-mcp-gateway.rb
+          sed -i 's|/v[0-9][^/]*/|/v${{ steps.version.outputs.version }}/|g' recall-mcp-gateway.rb
+          # Update SHA256s in order: darwin-arm64, darwin-amd64, linux-arm64, linux-amd64
+          python3 -c "
+          import re
+          with open('recall-mcp-gateway.rb') as f:
+              content = f.read()
+          shas = re.findall(r'sha256 \"([a-f0-9]{64})\"', content)
+          replacements = {
+              shas[0]: '${{ steps.checksums.outputs.darwin_arm64 }}',
+              shas[1]: '${{ steps.checksums.outputs.darwin_amd64 }}',
+              shas[2]: '${{ steps.checksums.outputs.linux_arm64 }}',
+              shas[3]: '${{ steps.checksums.outputs.linux_amd64 }}',
+          }
+          for old, new in replacements.items():
+              content = content.replace(old, new, 1)
+          with open('recall-mcp-gateway.rb', 'w') as f:
+              f.write(content)
+          "
+
+      - name: Commit and push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/recall-mcp-gateway.rb
+          git diff --staged --quiet && exit 0
+          git commit -m "Update recall-mcp-gateway to v${{ steps.version.outputs.version }}"
+          git push
