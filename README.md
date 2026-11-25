@@ -4,6 +4,9 @@
 [![Status: Beta](https://img.shields.io/badge/status-beta-yellow)]()
 [![Go](https://img.shields.io/badge/go-1.26+-00ADD8.svg)](https://go.dev/)
 [![MCP](https://img.shields.io/badge/MCP-2026--07--28-purple.svg)]()
+[![npm](https://img.shields.io/npm/v/@controlisai/recall-mcp-gateway)](https://www.npmjs.com/package/@controlisai/recall-mcp-gateway)
+[![Docker](https://img.shields.io/docker/v/controlisai/recall-mcp-gateway?label=docker)](https://hub.docker.com/r/controlisai/recall-mcp-gateway)
+[![Homebrew](https://img.shields.io/badge/homebrew-controlisai%2Ftap-orange)](https://github.com/controlisai/homebrew-tap)
 
 **Know what your AI agents do. Control what they're allowed to do.**
 
@@ -26,6 +29,19 @@ Upstream MCP Servers (databases, APIs, SaaS tools)
 ```
 
 ## Quick Start
+
+### npx (zero install)
+
+```bash
+npx @controlisai/recall-mcp-gateway
+```
+
+### Homebrew (macOS / Linux)
+
+```bash
+brew install controlisai/tap/recall-mcp-gateway
+recall-mcp-gateway
+```
 
 ### Docker
 
@@ -155,6 +171,13 @@ docker compose --profile multinode up -d
 ### Kubernetes (Helm)
 
 ```bash
+# From GHCR
+helm install recall-mcp-gateway oci://ghcr.io/controlisai/charts/recall-mcp-gateway
+
+# From Docker Hub
+helm install recall-mcp-gateway oci://registry-1.docker.io/controlisai/recall-mcp-gateway
+
+# From local chart (with overrides)
 helm install recall-mcp-gateway charts/recall-mcp-gateway \
   --set tls.enabled=true \
   --set ingress.host=proxy.company.com
