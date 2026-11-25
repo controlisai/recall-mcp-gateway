@@ -37,7 +37,9 @@ class RecallMcpGateway < Formula
   end
 
   def install
-    bin.install "recall-mcp-gateway"
+    # Binary in tarball is platform-suffixed (e.g., recall-mcp-gateway-darwin-arm64)
+    binary = Dir["recall-mcp-gateway-*"].first || "recall-mcp-gateway"
+    bin.install binary => "recall-mcp-gateway"
   end
 
   def post_install
