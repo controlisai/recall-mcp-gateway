@@ -63,6 +63,14 @@ make build
 
 Open http://localhost:8090/dashboard — no config needed. Add MCP servers, create agents, and set rules from the dashboard. The Settings tab has copy-paste connection snippets for Claude Desktop, Cursor, n8n, and other frameworks.
 
+## Documentation
+
+| Guide | Covers |
+|-------|--------|
+| [Deployment Guide](docs/client/deployment-guide.md) | Production setup: Docker, Helm, TLS, auth, PostgreSQL, full config reference |
+| [Usage Guide](docs/client/usage-guide.md) | Agents, rules, approval workflows, framework connection, dashboard |
+| [Security Hardening](docs/client/security-hardening-guide.md) | Production security checklist, JWT, CORS, audit integrity |
+
 ## Features
 
 ### Zero-Config Detection
@@ -197,8 +205,6 @@ helm install recall-mcp-gateway charts/recall-mcp-gateway \
   --set tls.enabled=true \
   --set ingress.host=proxy.company.com
 ```
-
-See [docs/client/deployment-guide.md](docs/client/deployment-guide.md) for detailed deployment instructions.
 
 ## Configuration
 

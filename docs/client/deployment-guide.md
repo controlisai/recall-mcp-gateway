@@ -42,11 +42,12 @@ AI Agent → Recall MCP Gateway (:8090) → MCP Tool Servers
 ### Install
 
 ```bash
-# macOS / Linux
-curl -fsSL https://get.controlis.ai/proxy | sh
+# Homebrew (macOS / Linux)
+brew tap controlisai/tap
+brew install recall-mcp-gateway
 
-# Homebrew
-brew install controlisai/tap/recall-mcp-gateway
+# npx (zero install)
+npx @controlisai/recall-mcp-gateway@beta
 ```
 
 ### Run
@@ -184,8 +185,9 @@ vim configs/standalone.yaml   # or postgres.yaml or multinode.yaml
 | `auth_server.issuer` | Using external OAuth/OIDC | Your Authorization Server URL |
 | `auth_server.audience` | Using external OAuth/OIDC | Expected JWT audience (typically gateway's MCP URL) |
 | `auth_server.jwks_url` | Using external OAuth/OIDC | JWKS endpoint (auto-discovered from issuer if omitted) |
-| `auth_server.approval_secret` | Consent/approval flows | 32+ char secret for request state encryption |
-| `auth_server.signing_key_file` | Token exchange (delegation) | Path to PEM-encoded RSA private key |
+| `auth_server.approval_secret` | Consent/approval flows | 32+ char secret for request state encryption. If empty, ephemeral key generated (does NOT survive restarts) |
+| `auth_server.max_delegation_depth` | Delegation chains | Max JWT `act` nesting depth (0 = unlimited) |
+| `auth_server.signing_key_file` | Token exchange (delegation) | Path to PEM-encoded RSA private key (ephemeral if omitted) |
 
 **Approval webhooks (optional):**
 
@@ -384,21 +386,58 @@ proxy:
   log_level: "info"                   # debug, info, warn, error
   metrics_enabled: true               # Prometheus /metrics endpoint
 
-  # Connected mode (Recall Platform)
-  engine_url: ""                      # engine /decide endpoint
-  console_api_url: ""                 # console-api for auto-registration
-  api_key: ""                         # SDK API key (scoped to product)
-  skip_local_rules: true              # skip proxy rules when engine connected
-  product: "my-gateway"               # informational label
+  # MCP protocol
+  default_action: "allow"             # allow (default) or block — when no rule matches
+  client_ttl_ms: 30000                # tool list cache TTL sent to clients (ms)
+  mcp_header_mode: "passthrough"      # passthrough (default), generate, managed
+  oauth_callback_port: 8091           # OAuth redirect listen port (default 8091)
+
+  # Approval settings
+  approval:
+    ttl: "5m"                         # pending approval expiry (default 5m)
+    admin_key: ""                     # shared secret for approval API endpoints
+    slack_signing_secret: ""          # Slack app signing secret for interactive callbacks
 
   # Audit
   audit:
-    retention: 30d
-    max_entries: 100000
+    storage: "sqlite"                 # sqlite (default), db, jsonl, memory
+    retention: 30d                    # auto-purge entries older than this
+    max_entries: 100000               # hard cap (0 = unlimited)
 
   # TLS
   tls_cert: /path/to/cert.pem
   tls_key: /path/to/key.pem
+
+  # CORS
+  allowed_origins: []                 # restrict origins (empty = allow all)
+  trusted_proxies: []                 # CIDR ranges to trust X-Forwarded-For from
+
+# Auth server (optional — enables JWT validation from external AS)
+auth_server:
+  issuer: "https://auth.example.com"
+  audience: "http://localhost:8090/mcp"
+  jwks_url: "https://auth.example.com/.well-known/jwks.json"
+  approval_secret: ""                 # 32+ char secret for request state AEAD encryption
+  max_delegation_depth: 0             # max JWT delegation nesting (0 = unlimited)
+  signing_key_file: ""                # PEM RSA key for token exchange (ephemeral if omitted)
+
+# LLM-powered recommendations (optional)
+# Enables AI-generated governance recommendations in the Understand tab.
+llm:
+  enabled: false
+  provider: "ollama"                  # ollama, openai, anthropic
+  model: "llama3"
+  api_key_env: "OPENAI_API_KEY"       # env var name containing API key
+  url: "http://localhost:11434"       # Ollama endpoint (ollama provider only)
+
+# Anomaly alerting (optional)
+# Sends webhook notifications when anomalous tool call patterns are detected.
+alerts:
+  - tool: "*"                         # tool name or glob
+    auto_detect: true                 # use behavioral baselines for threshold
+    threshold: 50                     # manual threshold (count in window)
+    window: "5m"                      # time window
+    notify: "https://hooks.slack.com/services/..."  # webhook URL
 
 # PostgreSQL (optional — omit for standalone SQLite mode)
 # When set, the gateway uses PostgreSQL instead of SQLite for all state.
@@ -419,17 +458,28 @@ servers:
   - name: database
     transport: http
     url: http://db-mcp:3000/mcp
+    server_type: database             # baseline profile: filesystem, github, database, slack, web-search, generic
+    cost_per_call: 0.04               # cost metric per tool call (for observability)
+    tool_annotations:                 # override upstream MCP tool annotations
+      - tool: "db_*_delete"
+        destructive_hint: true
+      - tool: "db_query"
+        read_only_hint: true
   - name: filesystem
     transport: stdio
     command: npx
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+    server_type: filesystem
 
 # Agent service accounts (seed data — populates DB on first startup only)
 agents:
   - id: support-bot
     token_hash: "sha256hexhash..."    # SHA-256 of bearer token
+    archetype: autonomous             # autonomous (default), user_embedded, delegated
     allowed_servers: [database]
-    org_id: "my-org"                  # optional: org context for platform
+    blocked_tools: ["db_*_delete"]    # tools this agent cannot call (glob patterns)
+    hidden_tools: ["internal_*"]      # tools hidden from ListTools but still callable
+    expires_at: "2027-01-01T00:00:00Z"  # token expiry (empty = never)
 
 # Governance rules (seed data — populates DB on first startup only)
 rules:
@@ -684,6 +734,77 @@ rules:
   - tool: "internal_*"
     action: hide
     agents: ["external-bot"]
+```
+
+### Approval and consent rules
+
+```yaml
+rules:
+  # Admin approval — autonomous agents get webhook notification
+  - tool: "send_email"
+    server: slack
+    action: require_approval
+    agents: ["pipeline-bot"]
+    reason: "External communication needs admin approval"
+    notify: "https://hooks.slack.com/services/..."
+
+  # Consent elicitation — user-embedded agents get an in-band form
+  - tool: "delete_record"
+    server: database
+    action: require_consent
+    agents: ["claude-desktop"]
+    consent_form:
+      title: "Confirm Deletion"
+      description: "This will permanently delete the record. Are you sure?"
+
+  # Callback mode — agent gets notified when approval is resolved
+  - tool: "deploy_production"
+    action: require_approval
+    retry_method: callback            # callback (webhook fires) vs poll (agent retries)
+    status_webhook: "https://my-app.com/approval-status"
+    reason: "Production deploys require approval"
+
+  # Delegation — route approval to the acting user, not the admin
+  - tool: "transfer_funds"
+    action: require_approval
+    delegation_notify: "https://my-app.com/user-approval"
+    reason: "Financial transfers require delegated user approval"
+
+  # Per-archetype actions — different behavior per agent type
+  - tool: "write_file"
+    server: filesystem
+    actions:
+      autonomous: require_approval
+      user_embedded: require_consent
+      delegated: require_approval
+    reason: "File writes need human oversight"
+```
+
+### Connected mode fields (Recall Platform only)
+
+These fields are only relevant when connecting to the Recall Platform (`engine_url` set). Standalone users can ignore them.
+
+```yaml
+proxy:
+  engine_url: ""                      # Recall Engine /decide endpoint
+  console_api_url: ""                 # Console-API URL for auto-registration
+  api_key: ""                         # SDK API key (scoped to product)
+  service_token: ""                   # alternative to api_key
+  skip_local_rules: true              # skip proxy rules when engine connected
+  multi_tenant: false                 # enable multi-tenant mode
+  default_org_id: ""                  # default org context for agents
+  product: "my-gateway"               # informational label
+
+# Multi-product mapping (connected mode only)
+products:
+  - name: "my-product"
+    api_key: "cai_rcl_sdk_prod_..."
+
+# Connected-mode agent fields
+agents:
+  - id: my-agent
+    product: "my-product"             # product this agent belongs to (connected only)
+    org_id: "customer-org"            # org context (connected only)
 ```
 
 ---
