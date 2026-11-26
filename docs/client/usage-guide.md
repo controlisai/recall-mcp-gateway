@@ -496,6 +496,64 @@ When `auto_detect` is enabled, the gateway learns normal call rates per (agent, 
 
 ---
 
+## Observability
+
+The gateway exposes two observability channels: **Prometheus metrics** (pull) and **OpenTelemetry tracing** (push).
+
+### Prometheus metrics
+
+Enabled by default at `/metrics` in Prometheus exposition format.
+
+```yaml
+proxy:
+  metrics_enabled: true               # default: true — set false to disable
+```
+
+**Available metrics:**
+
+| Metric | Type | Description |
+|---|---|---|
+| `recall_proxy_tool_calls_total` | counter | Total tool calls by tool, agent, decision |
+| `recall_proxy_tool_latency_ms` | histogram | Tool call latency distribution |
+| `recall_proxy_active_connections` | gauge | Active upstream server connections |
+| `recall_proxy_rules_evaluated_total` | counter | Rule evaluations by action |
+| `recall_proxy_approvals_pending` | gauge | Currently pending approvals |
+
+**Scrape config:**
+
+```yaml
+# prometheus.yml
+- job_name: recall-mcp-gateway
+  static_configs:
+    - targets: ['recall-mcp-gateway:8090']
+  metrics_path: /metrics
+```
+
+The Helm chart includes Prometheus annotations by default (`prometheus.io/scrape: "true"`).
+
+### OpenTelemetry tracing
+
+When enabled, the gateway participates in distributed traces — extracting and propagating W3C trace context (`traceparent` / `tracestate`) from MCP request `_meta` fields.
+
+```yaml
+proxy:
+  tracing:
+    enabled: true
+    endpoint: "localhost:4317"          # OTLP gRPC collector (Jaeger, Tempo, Datadog)
+    service_name: "recall-mcp-gateway"  # appears in traces
+```
+
+**What the gateway traces:**
+
+- Creates child spans for each tool call with attributes: tool name, agent, server, decision, latency
+- Propagates trace context to upstream MCP servers
+- Records trace IDs in audit entries — links dashboard feed to distributed traces
+- Exports spans via OTLP to any compatible collector
+
+Trace IDs appear in the Discover tab as purple badges on each call.
+
+---
+
 ## Admin API Quick Reference
 
 ### Health & status
