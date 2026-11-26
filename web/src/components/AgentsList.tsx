@@ -7,6 +7,7 @@ import {
   createAgent,
   deleteAgent,
   updateAgentServers,
+  updateAgentProduct,
   rotateAgentToken,
   type AgentConfig,
   type RuleEntry,
@@ -572,14 +573,12 @@ function AgentRow({ agent, isExpanded, onToggle, onDelete, onRotateToken, onServ
             </div>
           </div>
 
-          {/* Product */}
+          {/* Product (inline editable) */}
           <div style={{ marginBottom: '14px' }}>
             <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
               Product
             </div>
-            <div style={{ fontSize: '12px', color: agent.product ? 'var(--text)' : 'var(--muted)' }}>
-              {agent.product || 'Not assigned'}
-            </div>
+            <InlineEditProduct agentId={agent.id} value={agent.product || ''} onSaved={onUpdate} />
           </div>
 
           {/* Server Access */}
@@ -796,5 +795,55 @@ function ToolAccessPopup({ toolName, agentId, agent, rules, position, onClose, o
         })}
       </div>
     </>
+  )
+}
+
+function InlineEditProduct({ agentId, value, onSaved }: { agentId: string; value: string; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const [saving, setSaving] = useState(false)
+
+  const save = async () => {
+    if (draft === value) { setEditing(false); return }
+    setSaving(true)
+    try {
+      await updateAgentProduct(agentId, draft)
+      onSaved()
+      setEditing(false)
+    } catch { /* ignore */ }
+    setSaving(false)
+  }
+
+  if (editing) {
+    return (
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <input
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+          onBlur={save}
+          placeholder="e.g., Analytics"
+          disabled={saving}
+          style={{
+            fontSize: '12px', padding: '3px 8px', background: 'var(--bg)',
+            border: '1px solid var(--accent)', borderRadius: 'var(--radius)',
+            color: 'var(--text)', outline: 'none', width: '160px',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      onClick={() => { setDraft(value); setEditing(true) }}
+      style={{ fontSize: '12px', color: value ? 'var(--text)' : 'var(--muted)', cursor: 'pointer' }}
+      title="Click to edit"
+    >
+      {value || 'Not assigned'}{' '}
+      <span style={{ fontSize: '10px', color: 'var(--muted)' }}>✎</span>
+    </div>
   )
 }

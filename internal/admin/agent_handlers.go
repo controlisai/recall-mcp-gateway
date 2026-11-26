@@ -533,6 +533,7 @@ func (h *AgentHandlers) handleUpdateAgent(w http.ResponseWriter, r *http.Request
 			HiddenTools       *[]string `json:"hiddenTools,omitempty"`
 			AcknowledgedTools *[]string `json:"acknowledgedTools,omitempty"`
 			OrgID             *string   `json:"orgId,omitempty"`
+			Product           *string   `json:"product,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -584,6 +585,9 @@ func (h *AgentHandlers) handleUpdateAgent(w http.ResponseWriter, r *http.Request
 				}
 				if body.OrgID != nil {
 					h.agents[i].OrgID = *body.OrgID
+				}
+				if body.Product != nil {
+					h.agents[i].Product = *body.Product
 				}
 				found = true
 				break

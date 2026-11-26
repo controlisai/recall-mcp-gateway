@@ -378,6 +378,13 @@ export function updateAgentTools(id: string, tools: { blockedTools?: string[]; h
   )
 }
 
+export function updateAgentProduct(id: string, product: string) {
+  return apiFetch<{ status: string; agentId: string }>(
+    `/admin/v1/agents/${encodeURIComponent(id)}`,
+    { method: 'PUT', body: JSON.stringify({ product }) },
+  )
+}
+
 export function rotateAgentToken(id: string) {
   return apiFetch<{ status: string; agentId: string; token: string }>(
     `/admin/v1/agents/${encodeURIComponent(id)}/rotate-token`,
