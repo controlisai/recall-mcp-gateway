@@ -3,6 +3,12 @@ import { useGatewayStore } from '@/stores/gateway-store'
 import { useFeedStore } from '@/stores/feed-store'
 import type { SSEMessage } from '@/lib/types'
 
+/** Close and reopen the SSE connection to get a fresh init message. */
+export function reconnectSSE() {
+  // Signal the hook to reconnect by dispatching a custom event
+  window.dispatchEvent(new CustomEvent('sse-reconnect'))
+}
+
 export function useSSE() {
   const retryRef = useRef(0)
   const esRef = useRef<EventSource | null>(null)
@@ -74,10 +80,20 @@ export function useSSE() {
 
     checkAuthAndConnect()
 
+    // Listen for reconnect requests (e.g., after adding/removing a server)
+    function handleReconnect() {
+      esRef.current?.close()
+      esRef.current = null
+      retryRef.current = 0
+      connect()
+    }
+    window.addEventListener('sse-reconnect', handleReconnect)
+
     return () => {
       mounted = false
       esRef.current?.close()
       esRef.current = null
+      window.removeEventListener('sse-reconnect', handleReconnect)
     }
   }, [])
 }

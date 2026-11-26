@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useGatewayStore } from '@/stores/gateway-store'
+import { reconnectSSE } from '@/hooks/use-sse'
 import { ClipboardList, Clock, EyeOff, TriangleAlert, Info } from 'lucide-react'
 import type { Server, ToolProfile, ToolAnnotation, ConnectionEvent } from '@/lib/types'
 import {
@@ -199,6 +200,8 @@ export function ServersList() {
     if (!confirm(`Remove server "${name}"? This will disconnect and remove all its tools.`)) return
     try {
       await removeServer(name)
+      // Reconnect SSE to refresh server list
+      setTimeout(() => reconnectSSE(), 500)
     } catch (e) {
       setError(String(e))
     }
@@ -259,6 +262,8 @@ export function ServersList() {
         await addServer(cfg)
       }
       resetForm()
+      // Reconnect SSE to refresh server list with new state
+      setTimeout(() => reconnectSSE(), 500)
     } catch (e) {
       setError(String(e))
     } finally {
