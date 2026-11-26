@@ -1263,9 +1263,15 @@ func loadConfig(path string) (*config.Config, error) {
 			fmt.Printf("    recall-mcp-gateway --config path/to/config.yaml\n\n")
 			fmt.Printf("  Docker:\n")
 			fmt.Printf("    docker run -v ./config.yaml:/app/config.yaml controlisai/recall-mcp-gateway --config /app/config.yaml\n\n")
+			fmt.Printf("  Docs:\n")
+			fmt.Printf("    http://localhost:8090/dashboard/#docs — full config reference\n\n")
 			fmt.Printf("  Starting with empty config (dashboard-only mode)...\n\n")
 			return &config.Config{
-				Proxy: config.ProxyConfig{Port: 8090, Dashboard: true},
+				Proxy: config.ProxyConfig{
+					Port:      8090,
+					Dashboard: true,
+					Audit:     config.AuditConfig{Storage: "sqlite"},
+				},
 			}, nil
 		}
 	}
