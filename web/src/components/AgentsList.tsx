@@ -97,6 +97,7 @@ export function AgentsList() {
   const [formAuthMethod, setFormAuthMethod] = useState<'bearer' | 'jwt'>('bearer')
   const [formGenToken, setFormGenToken] = useState(true)
   const [newToken, setNewToken] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -216,15 +217,22 @@ export function AgentsList() {
           <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 600, marginBottom: '4px' }}>
             Agent Token (copy now — won't be shown again)
           </div>
-          <div style={{
-            fontFamily: MONO, fontSize: '12px', color: 'var(--text)', padding: '6px 10px',
-            background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)',
-            wordBreak: 'break-all', cursor: 'pointer',
-          }}
-            onClick={() => { navigator.clipboard.writeText(newToken); setNewToken(null) }}
-            title="Click to copy"
-          >
-            {newToken}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+            <div style={{
+              flex: 1, fontFamily: MONO, fontSize: '12px', color: 'var(--text)', padding: '6px 10px',
+              background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)',
+              wordBreak: 'break-all', userSelect: 'all',
+            }}>
+              {newToken}
+            </div>
+            <button onClick={() => { navigator.clipboard.writeText(newToken); setCopied(true); setTimeout(() => setCopied(false), 2000) }} style={{
+              padding: '6px 14px', fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+              background: copied ? 'var(--green)' : 'var(--surface)', color: copied ? 'white' : 'var(--text)',
+              whiteSpace: 'nowrap', transition: 'all 0.15s',
+            }}>
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
           </div>
           <button onClick={() => setNewToken(null)} style={{
             marginTop: '6px', fontSize: '11px', color: 'var(--muted)', background: 'transparent',
