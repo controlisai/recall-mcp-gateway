@@ -129,6 +129,18 @@ Live dashboard at `http://localhost:8090/dashboard` with five tabs:
 - **Settings** — configuration, agent connection snippets, platform connection
 - **Docs** — built-in API reference, security guide, deployment guide
 
+#### Discover — Real-time visibility into every tool call
+![Discover](docs/screenshots/discover.png)
+
+#### Understand — Compliance scoring and actionable recommendations
+![Understand](docs/screenshots/understand.png)
+
+#### Control — Server connections, agent permissions, governance rules
+![Control](docs/screenshots/control.png)
+
+#### Settings — Auth configuration, webhooks, platform connection
+![Settings](docs/screenshots/settings.png)
+
 ### Framework Support
 
 Works with any MCP-compatible agent — point at `http://localhost:8090/mcp`:
