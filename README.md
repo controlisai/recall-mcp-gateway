@@ -33,20 +33,22 @@ Upstream MCP Servers (databases, APIs, SaaS tools)
 ### npx (zero install)
 
 ```bash
-npx @controlisai/recall-mcp-gateway
+npx @controlisai/recall-mcp-gateway@beta
 ```
 
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew install controlisai/tap/recall-mcp-gateway
+brew tap controlisai/tap
+brew trust controlisai/tap
+brew install recall-mcp-gateway
 recall-mcp-gateway
 ```
 
 ### Docker
 
 ```bash
-docker run -p 8090:8090 controlisai/recall-mcp-gateway:latest
+docker run -p 8090:8090 controlisai/recall-mcp-gateway:v1.0.0-beta.7
 ```
 
 ### From Source
@@ -55,10 +57,10 @@ docker run -p 8090:8090 controlisai/recall-mcp-gateway:latest
 git clone https://github.com/controlisai/recall-mcp-gateway.git
 cd recall-mcp-gateway
 make build
-./recall-mcp-gateway --config configs/standalone.yaml
+./recall-mcp-gateway
 ```
 
-Dashboard at http://localhost:8090/dashboard. The Settings tab has copy-paste connection snippets for Claude Desktop, Cursor, n8n, and other frameworks.
+Open http://localhost:8090/dashboard — no config needed. Add MCP servers, create agents, and set rules from the dashboard. The Settings tab has copy-paste connection snippets for Claude Desktop, Cursor, n8n, and other frameworks.
 
 ## Features
 
