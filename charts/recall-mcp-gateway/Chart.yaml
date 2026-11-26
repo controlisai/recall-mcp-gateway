@@ -9,7 +9,7 @@ keywords:
   - ai-agents
   - governance
   - proxy
-home: https://controlis.ai
+home: https://controlis.ai/#/gateway
 sources:
   - https://github.com/controlisai/recall-mcp-gateway
 maintainers:

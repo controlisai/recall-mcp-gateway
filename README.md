@@ -7,6 +7,7 @@
 [![npm](https://img.shields.io/npm/v/@controlisai/recall-mcp-gateway)](https://www.npmjs.com/package/@controlisai/recall-mcp-gateway)
 [![Docker](https://img.shields.io/docker/v/controlisai/recall-mcp-gateway?label=docker)](https://hub.docker.com/r/controlisai/recall-mcp-gateway)
 [![Homebrew](https://img.shields.io/badge/homebrew-controlisai%2Ftap-orange)](https://github.com/controlisai/homebrew-tap)
+[![Website](https://img.shields.io/badge/website-controlis.ai-green)](https://controlis.ai/#/gateway)
 
 **Know what your AI agents do. Control what they're allowed to do.**
 
@@ -247,7 +248,7 @@ The dashboard also exposes `/ws/audit` (SSE live feed) when `dashboard: true` is
 
 ## Connected Mode (Recall Platform)
 
-The gateway can optionally connect to the [Recall Platform](https://controlis.ai) for centralized governance across multiple gateways:
+The gateway can optionally connect to the [Recall Platform](https://controlis.ai/#/gateway) for centralized governance across multiple gateways:
 
 - Centralized policy management
 - Fleet-wide compliance scoring
@@ -281,4 +282,4 @@ To report a security vulnerability, see [SECURITY.md](SECURITY.md).
 
 [AGPL-3.0](LICENSE). Copyright 2026 ControlisAI.
 
-All standalone features are free and open source. The [Recall Platform](https://controlis.ai) (centralized governance, fleet management) is a separate commercial product.
+All standalone features are free and open source. The [Recall Platform](https://controlis.ai/#/gateway) (centralized governance, fleet management) is a separate commercial product.
